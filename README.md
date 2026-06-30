@@ -6,15 +6,6 @@ Site institucional responsivo e SPA para o CETI Maria Neusa de Sousa - Francisco
 
 Abra o arquivo `index.html` diretamente no navegador.
 
-## Colocar em rede local
-
-Na pasta do projeto, rode:
-
-```powershell
-node serve-local.js
-```
-
-Depois acesse pelo computador em `http://localhost:8080` ou, em outro aparelho na mesma rede Wi-Fi, use `http://IP-DO-COMPUTADOR:8080`.
 
 ## Login
 
