@@ -1,3 +1,4 @@
+import { supabase } from "./supabase.js";
 const STORAGE_KEY = "ceti_maria_neusa_cms_v1";
 const SESSION_KEY = "ceti_admin_session";
 const CREDENTIALS_KEY = "ceti_admin_credentials";
