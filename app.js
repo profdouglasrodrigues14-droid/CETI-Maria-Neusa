@@ -1,4 +1,22 @@
 import { supabase } from "./supabase.js";
+console.log("App carregado!");
+
+console.log("Supabase:", supabase);
+
+async function testarConexao() {
+    try {
+        const { data, error } = await supabase
+            .from("noticias")
+            .select("*");
+
+        console.log("Dados:", data);
+        console.log("Erro:", error);
+    } catch (e) {
+        console.error("Erro ao conectar:", e);
+    }
+}
+
+testarConexao();
 const STORAGE_KEY = "ceti_maria_neusa_cms_v1";
 const SESSION_KEY = "ceti_admin_session";
 const CREDENTIALS_KEY = "ceti_admin_credentials";
