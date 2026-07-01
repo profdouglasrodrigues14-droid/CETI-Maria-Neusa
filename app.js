@@ -53,9 +53,9 @@ const defaultData = {
       subject: "Matematica",
       className: "1 Ano A",
       trimesters: {
-        1: { n1: 8, n2: 7, n3: 6 },
-        2: { n1: 7, n2: 8, n3: 7 },
-        3: { n1: 6, n2: 7, n3: 8 }
+        1: { n1: 8, n2: 7, n3: 6, recovery: false },
+        2: { n1: 7, n2: 8, n3: 7, recovery: false },
+        3: { n1: 6, n2: 7, n3: 8, recovery: false }
       }
     }
   ],
@@ -148,7 +148,7 @@ const defaultData = {
   },
   about: {
     history:
-      "O CETI Maria Neusa de Sousa atua em Francisco Macedo-PI fortalecendo trajetorias estudantis por meio de formacao integral, projetos pedagogicos, cultura digital e participacao da comunidade.",
+      "O CETI Maria Neusa de Sousa atua em Francisco Macedo-PI fortalecendo trajetorias estudantis por meio de formacao integral, projetos pedagogicos, cultura digital e participacao da comunidad[...]",
     mission: "Oferecer educacao publica de qualidade, inclusiva e conectada aos desafios contemporaneos.",
     vision: "Ser referencia regional em inovacao pedagogica, protagonismo estudantil e gestao participativa.",
     values: "Etica, respeito, colaboracao, equidade, criatividade, responsabilidade social e excelencia."
@@ -229,7 +229,8 @@ function normalizeTrimester(trimester = {}) {
   return {
     n1: Number(trimester.n1) || 0,
     n2: Number(trimester.n2) || 0,
-    n3: Number(trimester.n3) || 0
+    n3: Number(trimester.n3) || 0,
+    recovery: Boolean(trimester.recovery) || false
   };
 }
 
@@ -919,7 +920,7 @@ function adminItemTitle(tab, item) {
 function adminItemDescription(tab, item) {
   if (tab === "students") return `${item.className} | usuario: ${item.user}`;
   if (tab === "teachers") return `${item.subject} | turmas: ${(item.classes || []).join(", ")} | usuario: ${item.user}`;
-  if (tab === "grades") return `${item.className} | 1T ${trimesterAverage(item, "1")} | 2T ${trimesterAverage(item, "2")} | 3T ${trimesterAverage(item, "3")} | final ${gradeAverage(item)}`;
+  if (tab === "grades") return `${item.className} | 1T ${trimesterAverage(item, "1")} ${getTrimester(item, "1").recovery ? "(Rec)" : ""} | 2T ${trimesterAverage(item, "2")} ${getTrimester(item, "2").recovery ? "(Rec)" : ""} | 3T ${trimesterAverage(item, "3")} ${getTrimester(item, "3").recovery ? "(Rec)" : ""} | final ${gradeAverage(item)}`;
   return item.summary || item.description || item.date || "";
 }
 
@@ -1031,6 +1032,10 @@ function gradeFields(item = {}, teacher = null) {
     ${field("N1", "n1", getTrimester(item, item.trimester || "1").n1, "number")}
     ${field("N2", "n2", getTrimester(item, item.trimester || "1").n2, "number")}
     ${field("N3", "n3", getTrimester(item, item.trimester || "1").n3, "number")}
+    <label>
+      <input type="checkbox" name="recovery" ${getTrimester(item, item.trimester || "1").recovery ? "checked" : ""}>
+      <span>Aluno em recuperacao neste trimestre</span>
+    </label>
   `.replaceAll(/<option value="([^"]+)"([^>]*)>([^<]+)<\/option>/g, (markup, value, selected, label) => {
     const student = state.students.find((entry) => entry.id === value);
     return student ? `<option value="${value}"${selected}>${escapeHtml(student.name)} - ${escapeHtml(student.className)}</option>` : markup;
@@ -1042,7 +1047,7 @@ function getTrimester(grade = {}, trimester = "1") {
 }
 
 function trimesterAverage(grade, trimester = "1") {
-  const values = Object.values(getTrimester(grade, trimester));
+  const values = Object.values(getTrimester(grade, trimester)).filter(v => typeof v === 'number');
   return (values.reduce((total, value) => total + value, 0) / 3).toFixed(1);
 }
 
@@ -1062,14 +1067,16 @@ function normalizeForm(tab, data, files, existing = {}) {
   if (tab === "grades") {
     const student = state.students.find((item) => item.id === data.studentId);
     base.className = data.className || student?.className || "";
+    const recovery = data.recovery === "on" || data.recovery === true;
     base.trimesters = {
       ...normalizeGradeShape(existing).trimesters,
-      [data.trimester]: normalizeTrimester({ n1: data.n1, n2: data.n2, n3: data.n3 })
+      [data.trimester]: normalizeTrimester({ n1: data.n1, n2: data.n2, n3: data.n3, recovery })
     };
     delete base.n1;
     delete base.n2;
     delete base.n3;
     delete base.trimester;
+    delete base.recovery;
   }
   return base;
 }
@@ -1165,13 +1172,13 @@ function renderTeacherPanel(session) {
     </div>
     <article class="panel seduc-panel">
       <h2>Conexao com SEDUC</h2>
-      <p class="muted">A integracao automatica com o iSEDUC depende de API oficial ou autorizacao da SEDUC. Por enquanto, este botao abre o portal para o professor registrar notas e presencas no sistema oficial.</p>
+      <p class="muted">A integracao automatica com o iSEDUC depende de API oficial ou autorizacao da SEDUC. Por enquanto, este botao abre o portal para o professor registrar notas e presencas no iSEDUC.</p>
     </article>
     <div class="panel">
       <div class="portal-heading compact">
         <div>
           <h2>Notas trimestrais</h2>
-          <p class="muted">Preencha N1, N2 e N3. A media do trimestre e calculada automaticamente.</p>
+          <p class="muted">Preencha N1, N2 e N3. A media do trimestre e calculada automaticamente. Marque se o aluno esta em recuperacao neste trimestre.</p>
         </div>
         <div class="segmented" role="tablist" aria-label="Trimestres">
           ${["1", "2", "3"].map((trimester) => `<button class="${currentTeacherTrimester === trimester ? "active" : ""}" data-teacher-trimester="${trimester}">${trimester}T</button>`).join("")}
@@ -1180,7 +1187,7 @@ function renderTeacherPanel(session) {
       <form data-teacher-grade-form>
         <div class="gradebook-table">
           <div class="gradebook-head">
-            <span>Estudante</span><span>N1</span><span>N2</span><span>N3</span><span>${currentTeacherTrimester}MT</span><span>Resultado</span>
+            <span>Estudante</span><span>N1</span><span>N2</span><span>N3</span><span>${currentTeacherTrimester}MT</span><span>Recuperacao</span><span>Resultado</span>
           </div>
           ${teacherStudents.map((student) => teacherStudentRow(student, teacher, currentTeacherTrimester)).join("") || emptyState("Nenhum aluno cadastrado nas turmas deste professor.")}
         </div>
@@ -1226,10 +1233,12 @@ function renderTeacherPanel(session) {
         trimesters: { 1: normalizeTrimester(), 2: normalizeTrimester(), 3: normalizeTrimester() }
       };
       next.teacherId = teacher.id;
+      const recovery = event.target.elements[`recovery-${student.id}`]?.checked || false;
       next.trimesters[currentTeacherTrimester] = normalizeTrimester({
         n1: event.target.elements[`n1-${student.id}`]?.value,
         n2: event.target.elements[`n2-${student.id}`]?.value,
-        n3: event.target.elements[`n3-${student.id}`]?.value
+        n3: event.target.elements[`n3-${student.id}`]?.value,
+        recovery
       });
       if (existing) {
         state.grades = state.grades.map((grade) => (grade.id === existing.id ? next : grade));
@@ -1249,6 +1258,7 @@ function teacherStudentRow(student, teacher, trimester) {
   const grade = findGrade(student.id, teacher.subject, student.className) || {};
   const trimesterData = getTrimester(grade, trimester);
   const average = trimesterAverage(grade, trimester);
+  const isRecovery = trimesterData.recovery || false;
   return `
     <div class="gradebook-row">
       <div>
@@ -1259,7 +1269,8 @@ function teacherStudentRow(student, teacher, trimester) {
       <input class="input" name="n2-${student.id}" type="number" min="0" max="10" step="0.1" value="${trimesterData.n2 || ""}">
       <input class="input" name="n3-${student.id}" type="number" min="0" max="10" step="0.1" value="${trimesterData.n3 || ""}">
       <strong>${average}</strong>
-      <span class="badge">${Number(average) >= 6 ? "Aprovado" : "Recuperacao"}</span>
+      <input type="checkbox" name="recovery-${student.id}" ${isRecovery ? "checked" : ""}>
+      <span class="badge">${Number(average) >= 6 && !isRecovery ? "Aprovado" : isRecovery ? "Recuperacao" : "Recuperacao"}</span>
     </div>
   `;
 }
@@ -1268,15 +1279,18 @@ function teacherReportTable(teacher, grades) {
   const rows = grades
     .map((grade) => {
       const student = state.students.find((item) => item.id === grade.studentId);
+      const t1Recovery = getTrimester(grade, "1").recovery;
+      const t2Recovery = getTrimester(grade, "2").recovery;
+      const t3Recovery = getTrimester(grade, "3").recovery;
       return `
         <tr>
           <td>${escapeHtml(student?.name || "Aluno")}</td>
           <td>${escapeHtml(grade.className)}</td>
-          <td>${trimesterAverage(grade, "1")}</td>
-          <td>${trimesterAverage(grade, "2")}</td>
-          <td>${trimesterAverage(grade, "3")}</td>
+          <td>${trimesterAverage(grade, "1")} ${t1Recovery ? "(Rec)" : ""}</td>
+          <td>${trimesterAverage(grade, "2")} ${t2Recovery ? "(Rec)" : ""}</td>
+          <td>${trimesterAverage(grade, "3")} ${t3Recovery ? "(Rec)" : ""}</td>
           <td>${gradeAverage(grade)}</td>
-          <td>${Number(gradeAverage(grade)) >= 6 ? "Aprovado" : "Recuperacao"}</td>
+          <td>${t1Recovery || t2Recovery || t3Recovery ? "Em recuperacao" : Number(gradeAverage(grade)) >= 6 ? "Aprovado" : "Recuperacao final"}</td>
         </tr>
       `;
     })
@@ -1306,6 +1320,9 @@ function renderStudentPanel(session) {
   const generalAverage = averages.length
     ? (averages.reduce((total, value) => total + value, 0) / averages.length).toFixed(1)
     : "0.0";
+  const hasRecoveryTrimester = grades.some(grade => 
+    getTrimester(grade, "1").recovery || getTrimester(grade, "2").recovery || getTrimester(grade, "3").recovery
+  );
   root.innerHTML = `
     <div class="portal-heading">
       <div>
@@ -1320,10 +1337,10 @@ function renderStudentPanel(session) {
     <div class="dashboard-grid">
       ${miniStat("Media geral", generalAverage)}
       ${miniStat("Disciplinas", grades.length)}
-      ${miniStat("Situacao", Number(generalAverage) >= 6 ? "Aprovado" : "Recuperacao")}
+      ${miniStat("Situacao", hasRecoveryTrimester ? "Em recuperacao" : Number(generalAverage) >= 6 ? "Aprovado" : "Recuperacao")}
     </div>
-    <article class="panel recovery-panel ${Number(generalAverage) < 6 ? "warning" : ""}">
-      <strong>${recoveryMessage(generalAverage)}</strong>
+    <article class="panel recovery-panel ${hasRecoveryTrimester || Number(generalAverage) < 6 ? "warning" : ""}">
+      <strong>${hasRecoveryTrimester ? "Aluno em recuperacao em algum trimestre. Procure a escola para acompanhar o plano de estudos." : recoveryMessage(generalAverage)}</strong>
     </article>
     <div class="grade-grid">
       ${grades.map((grade) => studentGradeCard(grade)).join("") || emptyState("Nenhuma nota cadastrada para este aluno.")}
@@ -1365,6 +1382,9 @@ function gradeRow(grade) {
 
 function studentGradeCard(grade) {
   const average = gradeAverage(grade);
+  const t1Recovery = getTrimester(grade, "1").recovery;
+  const t2Recovery = getTrimester(grade, "2").recovery;
+  const t3Recovery = getTrimester(grade, "3").recovery;
   return `
     <article class="panel grade-card">
       <div class="grade-card-head">
@@ -1372,13 +1392,13 @@ function studentGradeCard(grade) {
           <span class="badge">${escapeHtml(grade.subject)}</span>
           <h3>Media final ${average}</h3>
         </div>
-        <strong>${Number(average) >= 6 ? "Aprovado" : "Recuperacao"}</strong>
+        <strong>${t1Recovery || t2Recovery || t3Recovery ? "Em recuperacao" : Number(average) >= 6 ? "Aprovado" : "Recuperacao"}</strong>
       </div>
       <div class="grade-chart" aria-label="Grafico de notas">
-        ${gradeBar("1T", trimesterAverage(grade, "1"))}
-        ${gradeBar("2T", trimesterAverage(grade, "2"))}
-        ${gradeBar("3T", trimesterAverage(grade, "3"))}
-        ${gradeBar("Media", average)}
+        ${gradeBar("1T", trimesterAverage(grade, "1"), t1Recovery)}
+        ${gradeBar("2T", trimesterAverage(grade, "2"), t2Recovery)}
+        ${gradeBar("3T", trimesterAverage(grade, "3"), t3Recovery)}
+        ${gradeBar("Media", average, false)}
       </div>
       <div class="trimester-grid">
         ${["1", "2", "3"].map((trimester) => trimesterMiniTable(grade, trimester)).join("")}
@@ -1389,9 +1409,10 @@ function studentGradeCard(grade) {
 
 function trimesterMiniTable(grade, trimester) {
   const data = getTrimester(grade, trimester);
+  const recoveryStatus = data.recovery ? " - EM RECUPERACAO" : "";
   return `
     <div class="trimester-mini">
-      <strong>${trimester} trimestre</strong>
+      <strong>${trimester} trimestre${recoveryStatus}</strong>
       <span>N1 ${Number(data.n1).toFixed(1)}</span>
       <span>N2 ${Number(data.n2).toFixed(1)}</span>
       <span>N3 ${Number(data.n3).toFixed(1)}</span>
@@ -1403,16 +1424,21 @@ function trimesterMiniTable(grade, trimester) {
 function studentReportTable(grades) {
   const rows = grades
     .map(
-      (grade) => `
-        <tr>
-          <td>${escapeHtml(grade.subject)}</td>
-          <td>${trimesterAverage(grade, "1")}</td>
-          <td>${trimesterAverage(grade, "2")}</td>
-          <td>${trimesterAverage(grade, "3")}</td>
-          <td>${gradeAverage(grade)}</td>
-          <td>${Number(gradeAverage(grade)) >= 6 ? "Aprovado" : "Recuperacao"}</td>
-        </tr>
-      `
+      (grade) => {
+        const t1Recovery = getTrimester(grade, "1").recovery;
+        const t2Recovery = getTrimester(grade, "2").recovery;
+        const t3Recovery = getTrimester(grade, "3").recovery;
+        return `
+          <tr>
+            <td>${escapeHtml(grade.subject)}</td>
+            <td>${trimesterAverage(grade, "1")} ${t1Recovery ? "(Rec)" : ""}</td>
+            <td>${trimesterAverage(grade, "2")} ${t2Recovery ? "(Rec)" : ""}</td>
+            <td>${trimesterAverage(grade, "3")} ${t3Recovery ? "(Rec)" : ""}</td>
+            <td>${gradeAverage(grade)}</td>
+            <td>${t1Recovery || t2Recovery || t3Recovery ? "Em recuperacao" : Number(gradeAverage(grade)) >= 6 ? "Aprovado" : "Recuperacao"}</td>
+          </tr>
+        `;
+      }
     )
     .join("");
   return `
@@ -1521,11 +1547,12 @@ function generatePdfReport(title, content) {
   reportWindow.document.close();
 }
 
-function gradeBar(label, value) {
+function gradeBar(label, value, isRecovery = false) {
   const percent = Math.max(0, Math.min(100, Number(value) * 10));
+  const recoveryText = isRecovery ? " - REC" : "";
   return `
     <div class="grade-bar">
-      <span>${label}</span>
+      <span>${label}${recoveryText}</span>
       <div><i style="width:${percent}%"></i></div>
       <strong>${Number(value).toFixed(1)}</strong>
     </div>
