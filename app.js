@@ -1,172 +1,43 @@
-import { supabase } from "./supabase.js";
-console.log("App carregado!");
+import { supabase, fetchWithCache, clearCache } from "./supabase.js";
 
+console.log("App carregado!");
 console.log("Supabase:", supabase);
 
-async function testarConexao() {
-    try {
-        const { data, error } = await supabase
-            .from("noticias")
-            .select("*");
-
-        console.log("Dados:", data);
-        console.log("Erro:", error);
-    } catch (e) {
-        console.error("Erro ao conectar:", e);
-    }
-}
-
-testarConexao();
-const STORAGE_KEY = "ceti_maria_neusa_cms_v1";
 const SESSION_KEY = "ceti_admin_session";
-const CREDENTIALS_KEY = "ceti_admin_credentials";
 const SCHOOL_LOGO = "assets/logo-ceti.png";
 const makeId = () => `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
-const defaultData = {
-  classes: ["1 Ano A", "2 Ano A", "3 Ano A"],
-  subjects: ["Portugues", "Matematica", "Historia", "Geografia", "Ciencias"],
-  students: [
-    {
-      id: makeId(),
-      name: "Ana Clara Sousa",
-      className: "1 Ano A",
-      user: "ana",
-      password: "123456"
-    }
-  ],
-  teachers: [
-    {
-      id: makeId(),
-      name: "Professor Matematica",
-      subject: "Matematica",
-      classes: ["1 Ano A"],
-      user: "prof",
-      password: "123456"
-    }
-  ],
-  grades: [
-    {
-      id: makeId(),
-      studentId: "",
-      teacherId: "",
-      subject: "Matematica",
-      className: "1 Ano A",
-      trimesters: {
-        1: { n1: 8, n2: 7, n3: 6, recovery: false },
-        2: { n1: 7, n2: 8, n3: 7, recovery: false },
-        3: { n1: 6, n2: 7, n3: 8, recovery: false }
-      }
-    }
-  ],
-  news: [
-    {
-      id: makeId(),
-      title: "Abertura do projeto Cultura Digital",
-      summary: "Estudantes iniciam ciclo de oficinas sobre tecnologia, cidadania e producao digital.",
-      content:
-        "O CETI Maria Neusa de Sousa deu inicio ao projeto Cultura Digital, com oficinas de pesquisa, apresentacao, seguranca online e producao colaborativa.",
-      category: "Tecnologia",
-      date: "2026-02-10",
-      author: "Coordenacao Pedagogica",
-      published: true,
-      files: []
-    },
-    {
-      id: makeId(),
-      title: "Reuniao de pais e responsaveis",
-      summary: "Encontro fortalece a parceria entre escola e familias no acompanhamento da aprendizagem.",
-      content:
-        "A equipe gestora convida pais e responsaveis para dialogo sobre calendario, rendimento, frequencia e projetos do semestre.",
-      category: "Comunicado",
-      date: "2026-02-22",
-      author: "Gestao Escolar",
-      published: true,
-      files: []
-    }
-  ],
-  events: [
-    {
-      id: makeId(),
-      title: "Feira de Ciencias e Tecnologia",
-      description: "Apresentacao de projetos interdisciplinares.",
-      date: "2026-03-12",
-      time: "08:00",
-      location: "Patio da escola"
-    },
-    {
-      id: makeId(),
-      title: "Simulado bimestral",
-      description: "Avaliacao diagnostica das areas de conhecimento.",
-      date: "2026-03-20",
-      time: "07:30",
-      location: "Salas de aula"
-    }
-  ],
-  activities: [
-    {
-      id: makeId(),
-      name: "Projeto Leitura em Movimento",
-      description: "Rodas de leitura, producao textual e socializacao de resenhas.",
-      responsible: "Area de Linguagens",
-      date: "2026-02-18",
-      files: []
-    },
-    {
-      id: makeId(),
-      name: "Competicao de Robotica Educacional",
-      description: "Desafios com prototipagem, logica e resolucao de problemas.",
-      responsible: "Laboratorio de Informatica",
-      date: "2026-03-04",
-      files: []
-    }
-  ],
-  achievements: [
-    {
-      id: makeId(),
-      title: "Destaque em olimpiada regional",
-      description: "Estudantes conquistam bons resultados em desafio de matematica.",
-      category: "Olimpiadas",
-      date: "2026-01-30",
-      files: []
-    },
-    {
-      id: makeId(),
-      title: "Certificacao em boas praticas pedagogicas",
-      description: "Equipe recebe reconhecimento por projeto de recomposicao de aprendizagem.",
-      category: "Certificacao",
-      date: "2026-02-14",
-      files: []
-    }
-  ],
+let state = {
+  classes: [],
+  subjects: [],
+  students: [],
+  teachers: [],
+  grades: [],
+  news: [],
+  events: [],
+  activities: [],
+  achievements: [],
   files: [],
   indicators: {
-    students: 420,
-    projects: 28,
-    events: 36,
-    awards: 12
+    students: 0,
+    projects: 0,
+    events: 0,
+    awards: 0
   },
   about: {
-    history:
-      "O CETI Maria Neusa de Sousa atua em Francisco Macedo-PI fortalecendo trajetorias estudantis por meio de formacao integral, projetos pedagogicos, cultura digital e participacao da comunidad[...]",
-    mission: "Oferecer educacao publica de qualidade, inclusiva e conectada aos desafios contemporaneos.",
-    vision: "Ser referencia regional em inovacao pedagogica, protagonismo estudantil e gestao participativa.",
-    values: "Etica, respeito, colaboracao, equidade, criatividade, responsabilidade social e excelencia."
+    history: "",
+    mission: "",
+    vision: "",
+    values: ""
   },
   contact: {
-    address: "Francisco Macedo - PI",
-    phone: "(89) 0000-0000",
-    email: "contato@cetimarianeusa.edu.br"
+    address: "",
+    phone: "",
+    email: ""
   },
-  team: [
-    { name: "Direcao Escolar", role: "Gestao" },
-    { name: "Coordenacao Pedagogica", role: "Acompanhamento" },
-    { name: "Secretaria Escolar", role: "Atendimento" },
-    { name: "Corpo Docente", role: "Ensino e projetos" }
-  ]
+  team: []
 };
 
-let state = loadData();
 let currentCalendarView = "month";
 let currentAdminTab = "dashboard";
 let currentTeacherTrimester = "1";
@@ -180,62 +51,143 @@ const escapeHtml = (value = "") =>
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
-function loadData() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) return ensureData(structuredClone(defaultData));
+// ==================== FUNÇÕES DE CÁLCULO ====================
+function calculateTrimesterRecovery(n1, n2, n3) {
+  const n1Num = Number(n1) || 0;
+  const n2Num = Number(n2) || 0;
+  const n3Num = Number(n3) || 0;
+  
+  if (n1Num === 0 && n2Num === 0 && n3Num === 0) return false;
+  
+  const average = (n1Num + n2Num + n3Num) / 3;
+  return average < 6;
+}
+
+function getTrimesterAverage(n1, n2, n3) {
+  const n1Num = Number(n1) || 0;
+  const n2Num = Number(n2) || 0;
+  const n3Num = Number(n3) || 0;
+  
+  if (n1Num === 0 && n2Num === 0 && n3Num === 0) return "0.0";
+  
+  return ((n1Num + n2Num + n3Num) / 3).toFixed(1);
+}
+
+function normalizeTrimester(trimester = {}) {
+  const n1 = Number(trimester.n1) || 0;
+  const n2 = Number(trimester.n2) || 0;
+  const n3 = Number(trimester.n3) || 0;
+  const recovery = calculateTrimesterRecovery(n1, n2, n3);
+  
+  return { n1, n2, n3, recovery };
+}
+
+function getTrimester(grade = {}, trimester = "1") {
+  return normalizeTrimester(grade.trimesters?.[trimester]);
+}
+
+function trimesterAverage(grade, trimester = "1") {
+  const tri = getTrimester(grade, trimester);
+  return getTrimesterAverage(tri.n1, tri.n2, tri.n3);
+}
+
+function gradeAverage(grade) {
+  const t1 = Number(trimesterAverage(grade, "1")) || 0;
+  const t2 = Number(trimesterAverage(grade, "2")) || 0;
+  const t3 = Number(trimesterAverage(grade, "3")) || 0;
+  
+  if (t1 === 0 && t2 === 0 && t3 === 0) return "0.0";
+  
+  let count = 0;
+  let sum = 0;
+  if (t1 > 0) { sum += t1; count++; }
+  if (t2 > 0) { sum += t2; count++; }
+  if (t3 > 0) { sum += t3; count++; }
+  
+  return count > 0 ? (sum / count).toFixed(1) : "0.0";
+}
+
+function hasAllGrades(studentId) {
+  const studentGrades = state.grades.filter((g) => g.studentId === studentId);
+  return studentGrades.every(
+    (g) =>
+      getTrimesterAverage(g.trimesters[1].n1, g.trimesters[1].n2, g.trimesters[1].n3) !== "0.0" &&
+      getTrimesterAverage(g.trimesters[2].n1, g.trimesters[2].n2, g.trimesters[2].n3) !== "0.0" &&
+      getTrimesterAverage(g.trimesters[3].n1, g.trimesters[3].n2, g.trimesters[3].n3) !== "0.0"
+  );
+}
+
+// ==================== FUNÇÕES DE DADOS ====================
+async function loadDataFromSupabase() {
   try {
-    return ensureData({ ...structuredClone(defaultData), ...JSON.parse(stored) });
-  } catch {
-    return ensureData(structuredClone(defaultData));
+    console.log("Carregando dados do Supabase...");
+    
+    const [
+      classesData,
+      subjectsData,
+      studentsData,
+      teachersData,
+      gradesData,
+      newsData,
+      eventsData,
+      activitiesData,
+      achievementsData
+    ] = await Promise.all([
+      supabase.from("classes").select("*"),
+      supabase.from("subjects").select("*"),
+      supabase.from("students").select("*"),
+      supabase.from("teachers").select("*"),
+      supabase.from("grades").select("*"),
+      supabase.from("news").select("*"),
+      supabase.from("events").select("*"),
+      supabase.from("activities").select("*"),
+      supabase.from("achievements").select("*")
+    ]);
+
+    state.classes = classesData.data?.map((c) => c.name) || [];
+    state.subjects = subjectsData.data?.map((s) => s.name) || [];
+    state.students = studentsData.data || [];
+    state.teachers = teachersData.data || [];
+    state.grades = (gradesData.data || []).map(normalizeGradeData);
+    state.news = newsData.data || [];
+    state.events = eventsData.data || [];
+    state.activities = activitiesData.data || [];
+    state.achievements = achievementsData.data || [];
+
+    console.log("Dados carregados com sucesso");
+  } catch (error) {
+    console.error("Erro ao carregar dados do Supabase:", error);
   }
 }
 
-function ensureData(data) {
-  data.classes ||= ["1 Ano A", "2 Ano A", "3 Ano A"];
-  data.subjects ||= ["Portugues", "Matematica", "Historia", "Geografia", "Ciencias"];
-  data.students ||= [];
-  data.teachers ||= [];
-  data.grades ||= [];
-  if (data.students[0] && data.teachers[0] && data.grades[0] && !data.grades[0].studentId) {
-    data.grades[0].studentId = data.students[0].id;
-    data.grades[0].teacherId = data.teachers[0].id;
-  }
-  data.grades = data.grades.map(normalizeGradeShape);
-  return data;
-}
-
-function normalizeGradeShape(grade) {
-  if (grade.trimesters) {
-    return {
-      ...grade,
-      trimesters: {
-        1: normalizeTrimester(grade.trimesters[1]),
-        2: normalizeTrimester(grade.trimesters[2]),
-        3: normalizeTrimester(grade.trimesters[3])
-      }
-    };
-  }
+function normalizeGradeData(grade) {
+  const trimesters = grade.trimesters || { 
+    1: { n1: 0, n2: 0, n3: 0 }, 
+    2: { n1: 0, n2: 0, n3: 0 }, 
+    3: { n1: 0, n2: 0, n3: 0 } 
+  };
+  
   return {
     ...grade,
     trimesters: {
-      1: normalizeTrimester({ n1: grade.n1, n2: grade.n2, n3: grade.n3 }),
-      2: normalizeTrimester(),
-      3: normalizeTrimester()
+      1: normalizeTrimester(trimesters[1]),
+      2: normalizeTrimester(trimesters[2]),
+      3: normalizeTrimester(trimesters[3])
     }
   };
 }
 
-function normalizeTrimester(trimester = {}) {
-  return {
-    n1: Number(trimester.n1) || 0,
-    n2: Number(trimester.n2) || 0,
-    n3: Number(trimester.n3) || 0,
-    recovery: Boolean(trimester.recovery) || false
-  };
-}
-
-function saveData() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+async function saveGradeToSupabase(grade) {
+  try {
+    const { error } = await supabase
+      .from("grades")
+      .upsert(grade, { onConflict: "id" });
+    
+    if (error) throw error;
+    clearCache("grades");
+  } catch (error) {
+    console.error("Erro ao salvar nota:", error);
+  }
 }
 
 function formatDate(date) {
@@ -291,6 +243,7 @@ function card(item, type, options = {}) {
   `;
 }
 
+// ==================== RENDERIZAÇÃO PÚBLICA ====================
 function renderPublic() {
   renderHome();
   renderNews();
@@ -482,10 +435,7 @@ function setupFilters() {
   });
 }
 
-function isLoggedIn() {
-  return getSession()?.role === "admin";
-}
-
+// ==================== AUTENTICAÇÃO ====================
 function getSession() {
   const stored = sessionStorage.getItem(SESSION_KEY);
   if (!stored) return null;
@@ -504,32 +454,25 @@ function clearSession() {
   sessionStorage.removeItem(SESSION_KEY);
 }
 
-function getAdminCredentials() {
-  const stored = localStorage.getItem(CREDENTIALS_KEY);
-  if (!stored) return null;
+async function findLogin(user, password) {
   try {
-    return JSON.parse(stored);
-  } catch {
+    const { data: admins } = await supabase.from("admins").select("*").eq("user", user).eq("password", password);
+    if (admins?.length) return { role: "admin", name: "Administrador", id: admins[0].id };
+
+    const { data: teachers } = await supabase.from("teachers").select("*").eq("user", user).eq("password", password);
+    if (teachers?.length) return { role: "teacher", id: teachers[0].id, name: teachers[0].name };
+
+    const { data: students } = await supabase.from("students").select("*").eq("user", user).eq("password", password);
+    if (students?.length) return { role: "student", id: students[0].id, name: students[0].name };
+
+    return null;
+  } catch (error) {
+    console.error("Erro ao buscar login:", error);
     return null;
   }
 }
 
-function saveAdminCredentials(user, password) {
-  localStorage.setItem(CREDENTIALS_KEY, JSON.stringify({ user, password }));
-}
-
-function findLogin(user, password) {
-  const credentials = getAdminCredentials();
-  if (credentials && user === credentials.user && password === credentials.password) {
-    return { role: "admin", name: "Administrador" };
-  }
-  const teacher = state.teachers.find((item) => item.user === user && item.password === password);
-  if (teacher) return { role: "teacher", id: teacher.id, name: teacher.name };
-  const student = state.students.find((item) => item.user === user && item.password === password);
-  if (student) return { role: "student", id: student.id, name: student.name };
-  return null;
-}
-
+// ==================== PORTAL DE LOGIN ====================
 function renderLoginPortal() {
   const session = getSession();
   if (session?.role === "admin") {
@@ -549,46 +492,19 @@ function renderLoginPortal() {
 
 function renderLoginForm() {
   const root = $("[data-login-root]");
-  const credentials = getAdminCredentials();
-  if (!credentials) {
-    root.innerHTML = `
-      <form class="panel contact-form" data-setup-form>
-        <h2>Criar acesso administrativo</h2>
-        <label>Usuario<input class="input" name="user" required autocomplete="username"></label>
-        <label>Senha<input class="input" name="password" type="password" required minlength="6" autocomplete="new-password"></label>
-        <label>Confirmar senha<input class="input" name="confirm" type="password" required minlength="6" autocomplete="new-password"></label>
-        <button class="button primary" type="submit">Criar acesso</button>
-        <p class="muted">Depois disso, o administrador podera cadastrar estudantes e professores.</p>
-      </form>
-    `;
-    $("[data-setup-form]").addEventListener("submit", (event) => {
-      event.preventDefault();
-      const form = new FormData(event.target);
-      if (form.get("password") !== form.get("confirm")) {
-        toast("As senhas nao conferem.");
-        return;
-      }
-      saveAdminCredentials(form.get("user"), form.get("password"));
-      setSession({ role: "admin", name: "Administrador" });
-      toast("Acesso administrativo criado.");
-      renderLoginPortal();
-    });
-    return;
-  }
-
   root.innerHTML = `
     <form class="panel contact-form login-card" data-login-form>
       <h2>Entrar no portal</h2>
       <label>Usuario<input class="input" name="user" required autocomplete="username"></label>
       <label>Senha<input class="input" name="password" type="password" required autocomplete="current-password"></label>
       <button class="button primary" type="submit">Entrar</button>
-      <p class="muted">Use o acesso cadastrado pelo administrador. Exemplo inicial: professor prof/123456 e estudante ana/123456.</p>
+      <p class="muted">Use seu usuario e senha cadastrados pelo administrador da escola.</p>
     </form>
   `;
-  $("[data-login-form]").addEventListener("submit", (event) => {
+  $("[data-login-form]").addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.target);
-    const session = findLogin(form.get("user"), form.get("password"));
+    const session = await findLogin(form.get("user"), form.get("password"));
     if (!session) {
       toast("Usuario ou senha invalidos.");
       return;
@@ -599,555 +515,7 @@ function renderLoginForm() {
   });
 }
 
-function renderAdmin() {
-  const root = $("[data-login-root]");
-  if (!isLoggedIn()) {
-    renderLoginForm();
-    return;
-  }
-
-  root.innerHTML = `
-    <div class="admin-layout">
-      <aside class="admin-tabs" aria-label="Menu administrativo">
-        ${["dashboard", "classes", "subjects", "students", "teachers", "grades", "news", "events", "activities", "achievements", "settings", "uploads"]
-          .map((tab) => `<button data-admin-tab="${tab}" class="${currentAdminTab === tab ? "active" : ""}">${tabLabel(tab)}</button>`)
-          .join("")}
-        <button data-logout>Sair</button>
-      </aside>
-      <section class="panel" data-admin-content></section>
-    </div>
-  `;
-  $$("[data-admin-tab]").forEach((button) =>
-    button.addEventListener("click", () => {
-      currentAdminTab = button.dataset.adminTab;
-      renderAdmin();
-    })
-  );
-  $("[data-logout]").addEventListener("click", () => {
-    clearSession();
-    toast("Sessao encerrada.");
-    renderLoginPortal();
-  });
-  renderAdminContent();
-}
-
-function tabLabel(tab) {
-  return {
-    dashboard: "Dashboard",
-    classes: "Turmas",
-    subjects: "Disciplinas",
-    students: "Alunos",
-    teachers: "Professores",
-    grades: "Notas",
-    news: "Noticias",
-    events: "Calendario",
-    activities: "Atividades",
-    achievements: "Conquistas",
-    settings: "Quem Somos e Contato",
-    uploads: "Arquivos"
-  }[tab];
-}
-
-function renderAdminContent() {
-  const content = $("[data-admin-content]");
-  if (currentAdminTab === "dashboard") {
-    content.innerHTML = `
-      <h2>Dashboard</h2>
-      <div class="dashboard-grid">
-        ${miniStat("Noticias", state.news.length)}
-        ${miniStat("Turmas", state.classes.length)}
-        ${miniStat("Disciplinas", state.subjects.length)}
-        ${miniStat("Alunos", state.students.length)}
-        ${miniStat("Professores", state.teachers.length)}
-        ${miniStat("Notas", state.grades.length)}
-        ${miniStat("Eventos", state.events.length)}
-        ${miniStat("Atividades", state.activities.length)}
-        ${miniStat("Conquistas", state.achievements.length)}
-      </div>
-      <p class="muted">Os dados cadastrados aparecem automaticamente nas abas publicas do portal.</p>
-    `;
-    return;
-  }
-  if (currentAdminTab === "uploads") {
-    content.innerHTML = `<h2>Upload de arquivos</h2>${uploadZone("global")}`;
-    bindUpload($("[data-upload='global']"), (files) => {
-      state.files.push(...files);
-      saveAndRerender("Arquivos enviados.");
-    });
-    return;
-  }
-  if (currentAdminTab === "settings") {
-    renderSettings(content);
-    return;
-  }
-  if (["classes", "subjects"].includes(currentAdminTab)) {
-    renderAcademicList(content, currentAdminTab);
-    return;
-  }
-  renderCrud(content, currentAdminTab);
-}
-
-function renderAcademicList(content, tab, editValue = "") {
-  const isClasses = tab === "classes";
-  const collection = state[tab];
-  const editing = collection.includes(editValue) ? editValue : "";
-  content.innerHTML = `
-    <h2>${tabLabel(tab)}</h2>
-    <form class="form-grid" data-academic-form>
-      ${field(isClasses ? "Nome da turma" : "Nome da disciplina", "name", editing)}
-      <div class="full">
-        <button class="button primary" type="submit">${editing ? "Salvar alteracoes" : "Cadastrar"}</button>
-        ${editing ? `<button class="button ghost" type="button" data-cancel-edit>Cancelar</button>` : ""}
-      </div>
-    </form>
-    <div class="admin-list">
-      ${
-        collection
-          .map(
-            (item) => `
-          <article class="admin-row">
-            <div>
-              <strong>${escapeHtml(item)}</strong>
-              <p class="muted">${academicUsageDescription(tab, item)}</p>
-            </div>
-            <div class="row-actions">
-              <button class="button ghost" data-edit-value="${escapeHtml(item)}">Editar</button>
-              <button class="button danger" data-delete-value="${escapeHtml(item)}">Excluir</button>
-            </div>
-          </article>
-        `
-          )
-          .join("") || emptyState(isClasses ? "Nenhuma turma cadastrada." : "Nenhuma disciplina cadastrada.")
-      }
-    </div>
-  `;
-
-  $("[data-academic-form]").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const name = String(new FormData(event.target).get("name") || "").trim();
-    if (!name) return;
-    const alreadyExists = collection.some((item) => item.toLowerCase() === name.toLowerCase() && item !== editing);
-    if (alreadyExists) {
-      toast(isClasses ? "Esta turma ja existe." : "Esta disciplina ja existe.");
-      return;
-    }
-    state[tab] = editing ? collection.map((item) => (item === editing ? name : item)) : [name, ...collection];
-    if (editing && editing !== name) renameAcademicValue(tab, editing, name);
-    saveAndRerender(editing ? "Registro atualizado." : "Registro cadastrado.");
-  });
-
-  $("[data-cancel-edit]")?.addEventListener("click", () => renderAcademicList(content, tab));
-  $$("[data-edit-value]", content).forEach((button) =>
-    button.addEventListener("click", () => renderAcademicList(content, tab, button.dataset.editValue))
-  );
-  $$("[data-delete-value]", content).forEach((button) =>
-    button.addEventListener("click", () => {
-      const value = button.dataset.deleteValue;
-      if (academicValueInUse(tab, value)) {
-        toast(isClasses ? "Turma em uso por alunos, professores ou notas." : "Disciplina em uso por professores ou notas.");
-        return;
-      }
-      state[tab] = collection.filter((item) => item !== value);
-      saveAndRerender("Registro excluido.");
-    })
-  );
-}
-
-function academicUsageDescription(tab, value) {
-  if (tab === "classes") {
-    const students = state.students.filter((student) => student.className === value).length;
-    const teachers = state.teachers.filter((teacher) => (teacher.classes || []).includes(value)).length;
-    return `${students} aluno(s) | ${teachers} professor(es)`;
-  }
-  const teachers = state.teachers.filter((teacher) => teacher.subject === value).length;
-  const grades = state.grades.filter((grade) => grade.subject === value).length;
-  return `${teachers} professor(es) | ${grades} nota(s)`;
-}
-
-function academicValueInUse(tab, value) {
-  if (tab === "classes") {
-    return (
-      state.students.some((student) => student.className === value) ||
-      state.teachers.some((teacher) => (teacher.classes || []).includes(value)) ||
-      state.grades.some((grade) => grade.className === value)
-    );
-  }
-  return state.teachers.some((teacher) => teacher.subject === value) || state.grades.some((grade) => grade.subject === value);
-}
-
-function renameAcademicValue(tab, oldValue, newValue) {
-  if (tab === "classes") {
-    state.students = state.students.map((student) => (student.className === oldValue ? { ...student, className: newValue } : student));
-    state.teachers = state.teachers.map((teacher) => ({
-      ...teacher,
-      classes: (teacher.classes || []).map((className) => (className === oldValue ? newValue : className))
-    }));
-    state.grades = state.grades.map((grade) => (grade.className === oldValue ? { ...grade, className: newValue } : grade));
-    return;
-  }
-  state.teachers = state.teachers.map((teacher) => (teacher.subject === oldValue ? { ...teacher, subject: newValue } : teacher));
-  state.grades = state.grades.map((grade) => (grade.subject === oldValue ? { ...grade, subject: newValue } : grade));
-}
-
-function renderSettings(content) {
-  content.innerHTML = `
-    <h2>Quem Somos e Contato</h2>
-    <form class="form-grid" data-settings-form>
-      ${field("Historia da escola", "history", state.about.history, "textarea", "full")}
-      ${field("Missao", "mission", state.about.mission, "textarea", "full")}
-      ${field("Visao", "vision", state.about.vision, "textarea", "full")}
-      ${field("Valores", "values", state.about.values, "textarea", "full")}
-      ${field("Endereco", "address", state.contact.address, "text", "full")}
-      ${field("Telefone", "phone", state.contact.phone)}
-      ${field("E-mail", "email", state.contact.email, "email")}
-      <div class="full">
-        <button class="button primary" type="submit">Salvar informacoes</button>
-      </div>
-    </form>
-  `;
-  $("[data-settings-form]").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const data = Object.fromEntries(new FormData(event.target).entries());
-    state.about = {
-      history: data.history,
-      mission: data.mission,
-      vision: data.vision,
-      values: data.values
-    };
-    state.contact = {
-      address: data.address,
-      phone: data.phone,
-      email: data.email
-    };
-    saveAndRerender("Informacoes institucionais atualizadas.");
-  });
-}
-
-function miniStat(label, value) {
-  return `<div class="mini-stat"><strong>${value}</strong><span>${label}</span></div>`;
-}
-
-function collectionFor(tab) {
-  return {
-    news: "news",
-    students: "students",
-    teachers: "teachers",
-    grades: "grades",
-    events: "events",
-    activities: "activities",
-    achievements: "achievements"
-  }[tab];
-}
-
-function renderCrud(content, tab, editId = null) {
-  const key = collectionFor(tab);
-  const collection = state[key];
-  const editing = collection.find((item) => item.id === editId);
-  content.innerHTML = `
-    <h2>${tabLabel(tab)}</h2>
-    <form class="form-grid" data-crud-form>
-      ${fieldsFor(tab, editing)}
-      ${["students", "teachers", "grades"].includes(tab) ? "" : `<div class="full">${uploadZone("entity")}</div>`}
-      <div class="full">
-        <button class="button primary" type="submit">${editing ? "Salvar alteracoes" : "Cadastrar"}</button>
-        ${editing ? `<button class="button ghost" type="button" data-cancel-edit>Cancelar</button>` : ""}
-      </div>
-    </form>
-    <div class="admin-list">
-      ${collection
-        .map(
-          (item) => `
-          <article class="admin-row">
-            <div>
-              <strong>${escapeHtml(adminItemTitle(tab, item))}</strong>
-              <p class="muted">${escapeHtml(adminItemDescription(tab, item))}</p>
-            </div>
-            <div class="row-actions">
-              ${tab === "news" ? `<button class="button ghost" data-toggle-publish="${item.id}">${item.published ? "Ocultar" : "Publicar"}</button>` : ""}
-              <button class="button ghost" data-edit="${item.id}">Editar</button>
-              <button class="button danger" data-delete="${item.id}">Excluir</button>
-            </div>
-          </article>
-        `
-        )
-        .join("")}
-    </div>
-  `;
-  let pendingFiles = editing?.files ? [...editing.files] : [];
-  bindUpload($("[data-upload='entity']"), (files) => {
-    pendingFiles.push(...files);
-    toast("Arquivo anexado ao cadastro.");
-  });
-  $("[data-crud-form]").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const formData = new FormData(event.target);
-    const data = Object.fromEntries(formData.entries());
-    if (tab === "teachers") data.classes = formData.getAll("classes");
-    const normalized = normalizeForm(tab, data, pendingFiles, editing);
-    if (editing) {
-      state[key] = collection.map((item) => (item.id === editing.id ? normalized : item));
-    } else {
-      state[key].unshift(normalized);
-    }
-    saveAndRerender(editing ? "Registro atualizado." : "Registro cadastrado.");
-  });
-  $("[data-cancel-edit]")?.addEventListener("click", () => renderCrud(content, tab));
-  $$("[data-edit]", content).forEach((button) => button.addEventListener("click", () => renderCrud(content, tab, button.dataset.edit)));
-  $$("[data-delete]", content).forEach((button) =>
-    button.addEventListener("click", () => {
-      state[key] = state[key].filter((item) => item.id !== button.dataset.delete);
-      saveAndRerender("Registro excluido.");
-    })
-  );
-  $$("[data-toggle-publish]", content).forEach((button) =>
-    button.addEventListener("click", () => {
-      state.news = state.news.map((item) => (item.id === button.dataset.togglePublish ? { ...item, published: !item.published } : item));
-      saveAndRerender("Status de publicacao atualizado.");
-    })
-  );
-}
-
-function adminItemTitle(tab, item) {
-  if (tab === "students") return item.name;
-  if (tab === "teachers") return item.name;
-  if (tab === "grades") {
-    const student = state.students.find((entry) => entry.id === item.studentId);
-    return `${student?.name || "Aluno"} - ${item.subject}`;
-  }
-  return item.title || item.name;
-}
-
-function adminItemDescription(tab, item) {
-  if (tab === "students") return `${item.className} | usuario: ${item.user}`;
-  if (tab === "teachers") return `${item.subject} | turmas: ${(item.classes || []).join(", ")} | usuario: ${item.user}`;
-  if (tab === "grades") return `${item.className} | 1T ${trimesterAverage(item, "1")} ${getTrimester(item, "1").recovery ? "(Rec)" : ""} | 2T ${trimesterAverage(item, "2")} ${getTrimester(item, "2").recovery ? "(Rec)" : ""} | 3T ${trimesterAverage(item, "3")} ${getTrimester(item, "3").recovery ? "(Rec)" : ""} | final ${gradeAverage(item)}`;
-  return item.summary || item.description || item.date || "";
-}
-
-function fieldsFor(tab, item = {}) {
-  if (tab === "students") {
-    return `
-      ${field("Nome do aluno", "name", item.name)}
-      ${selectField("Turma", "className", state.classes, item.className)}
-      ${field("Usuario", "user", item.user)}
-      ${field("Senha", "password", item.password || "", "password")}
-    `;
-  }
-  if (tab === "teachers") {
-    return `
-      ${field("Nome do professor", "name", item.name)}
-      ${selectField("Disciplina", "subject", state.subjects, item.subject)}
-      ${checkboxField("Turmas", "classes", state.classes, item.classes || [], "full")}
-      ${field("Usuario", "user", item.user)}
-      ${field("Senha", "password", item.password || "", "password")}
-    `;
-  }
-  if (tab === "grades") {
-    return gradeFields(item);
-  }
-  if (tab === "news") {
-    return `
-      ${field("Titulo", "title", item.title)}
-      ${field("Categoria", "category", item.category)}
-      ${field("Resumo", "summary", item.summary, "textarea", "full")}
-      ${field("Conteudo completo", "content", item.content, "textarea", "full")}
-      ${field("Data", "date", item.date, "date")}
-      ${field("Autor", "author", item.author)}
-      <label>Publicado<select class="input" name="published"><option value="true" ${item.published !== false ? "selected" : ""}>Sim</option><option value="false" ${item.published === false ? "selected" : ""}>Nao</option></select></label>
-    `;
-  }
-  if (tab === "events") {
-    return `
-      ${field("Titulo", "title", item.title)}
-      ${field("Data", "date", item.date, "date")}
-      ${field("Horario", "time", item.time, "time")}
-      ${field("Local", "location", item.location)}
-      ${field("Descricao", "description", item.description, "textarea", "full")}
-    `;
-  }
-  if (tab === "activities") {
-    return `
-      ${field("Nome da atividade", "name", item.name)}
-      ${field("Responsavel", "responsible", item.responsible)}
-      ${field("Data", "date", item.date, "date")}
-      ${field("Descricao", "description", item.description, "textarea", "full")}
-    `;
-  }
-  return `
-    ${field("Titulo", "title", item.title)}
-    ${field("Categoria", "category", item.category)}
-    ${field("Data", "date", item.date, "date")}
-    ${field("Descricao", "description", item.description, "textarea", "full")}
-  `;
-}
-
-function field(label, name, value = "", type = "text", span = "") {
-  const safeValue = escapeHtml(value);
-  const input =
-    type === "textarea"
-      ? `<textarea class="input" name="${name}" rows="4" required>${safeValue}</textarea>`
-      : `<input class="input" name="${name}" type="${type}" value="${safeValue}" required>`;
-  return `<label class="${span}">${label}${input}</label>`;
-}
-
-function selectField(label, name, options, value = "", span = "") {
-  return `
-    <label class="${span}">${label}
-      <select class="input" name="${name}" required>
-        ${options.map((option) => `<option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
-      </select>
-    </label>
-  `;
-}
-
-function checkboxField(label, name, options, selected = [], span = "") {
-  return `
-    <fieldset class="check-field ${span}">
-      <legend>${label}</legend>
-      <div class="check-grid">
-        ${options
-          .map(
-            (option) => `
-          <label>
-            <input type="checkbox" name="${name}" value="${escapeHtml(option)}" ${selected.includes(option) ? "checked" : ""}>
-            <span>${escapeHtml(option)}</span>
-          </label>
-        `
-          )
-          .join("") || `<p class="muted">Cadastre uma turma antes de vincular professores.</p>`}
-      </div>
-    </fieldset>
-  `;
-}
-
-function gradeFields(item = {}, teacher = null) {
-  const allowedClasses = teacher ? teacher.classes || [] : state.classes;
-  const allowedSubjects = teacher ? [teacher.subject] : state.subjects;
-  const students = state.students.filter((student) => !allowedClasses.length || allowedClasses.includes(student.className));
-  return `
-    ${selectField("Aluno", "studentId", students.map((student) => student.id), item.studentId)}
-    ${selectField("Disciplina", "subject", allowedSubjects, item.subject)}
-    ${selectField("Turma", "className", allowedClasses.length ? allowedClasses : state.classes, item.className)}
-    ${selectField("Trimestre", "trimester", ["1", "2", "3"], item.trimester || "1")}
-    ${field("N1", "n1", getTrimester(item, item.trimester || "1").n1, "number")}
-    ${field("N2", "n2", getTrimester(item, item.trimester || "1").n2, "number")}
-    ${field("N3", "n3", getTrimester(item, item.trimester || "1").n3, "number")}
-    <label>
-      <input type="checkbox" name="recovery" ${getTrimester(item, item.trimester || "1").recovery ? "checked" : ""}>
-      <span>Aluno em recuperacao neste trimestre</span>
-    </label>
-  `.replaceAll(/<option value="([^"]+)"([^>]*)>([^<]+)<\/option>/g, (markup, value, selected, label) => {
-    const student = state.students.find((entry) => entry.id === value);
-    return student ? `<option value="${value}"${selected}>${escapeHtml(student.name)} - ${escapeHtml(student.className)}</option>` : markup;
-  });
-}
-
-function getTrimester(grade = {}, trimester = "1") {
-  return normalizeTrimester(grade.trimesters?.[trimester]);
-}
-
-function trimesterAverage(grade, trimester = "1") {
-  const values = Object.values(getTrimester(grade, trimester)).filter(v => typeof v === 'number');
-  return (values.reduce((total, value) => total + value, 0) / 3).toFixed(1);
-}
-
-function gradeAverage(grade) {
-  const averages = ["1", "2", "3"].map((trimester) => Number(trimesterAverage(grade, trimester)));
-  return (averages.reduce((total, value) => total + value, 0) / averages.length).toFixed(1);
-}
-
-function recoveryMessage(average) {
-  return Number(average) >= 6 ? "Aluno aprovado." : "Aluno em recuperacao. Procure a escola para acompanhar o plano de estudos.";
-}
-
-function normalizeForm(tab, data, files, existing = {}) {
-  const base = { ...existing, ...data, id: existing.id || makeId(), files };
-  if (tab === "news") base.published = data.published === "true";
-  if (tab === "teachers") base.classes = Array.isArray(data.classes) ? data.classes : String(data.classes || "").split(",").map((item) => item.trim()).filter(Boolean);
-  if (tab === "grades") {
-    const student = state.students.find((item) => item.id === data.studentId);
-    base.className = data.className || student?.className || "";
-    const recovery = data.recovery === "on" || data.recovery === true;
-    base.trimesters = {
-      ...normalizeGradeShape(existing).trimesters,
-      [data.trimester]: normalizeTrimester({ n1: data.n1, n2: data.n2, n3: data.n3, recovery })
-    };
-    delete base.n1;
-    delete base.n2;
-    delete base.n3;
-    delete base.trimester;
-    delete base.recovery;
-  }
-  return base;
-}
-
-function uploadZone(id) {
-  return `
-    <div class="upload-zone" data-upload="${id}">
-      <strong>Arraste arquivos ou selecione do dispositivo</strong>
-      <p class="muted">Imagens JPG, PNG, WEBP; videos MP4, WEBM; documentos PDF.</p>
-      <input class="input" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.mp4,.webm,.pdf,image/*,video/*,application/pdf">
-      <div class="progress" aria-hidden="true"><span></span></div>
-      <div class="preview-grid" data-preview></div>
-    </div>
-  `;
-}
-
-function bindUpload(zone, onDone) {
-  if (!zone) return;
-  const input = $("input[type='file']", zone);
-  const progress = $(".progress span", zone);
-  const preview = $("[data-preview]", zone);
-  const process = async (fileList) => {
-    const files = [...fileList];
-    const accepted = files.filter((file) => /image\/|video\/|application\/pdf/.test(file.type));
-    const output = [];
-    for (const [index, file] of accepted.entries()) {
-      const data = await readFile(file);
-      output.push({ id: makeId(), name: file.name, type: file.type, size: file.size, data });
-      progress.style.width = `${Math.round(((index + 1) / accepted.length) * 100)}%`;
-    }
-    preview.innerHTML = output.map(previewItem).join("");
-    if (output.length) onDone(output);
-    if (files.length !== accepted.length) toast("Alguns arquivos foram ignorados por formato invalido.");
-  };
-  input.addEventListener("change", () => process(input.files));
-  zone.addEventListener("dragover", (event) => {
-    event.preventDefault();
-    zone.classList.add("dragover");
-  });
-  zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
-  zone.addEventListener("drop", (event) => {
-    event.preventDefault();
-    zone.classList.remove("dragover");
-    process(event.dataTransfer.files);
-  });
-}
-
-function readFile(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.readAsDataURL(file);
-  });
-}
-
-function previewItem(file) {
-  const thumb = file.type.startsWith("image/")
-    ? `<img src="${file.data}" alt="">`
-    : file.type.startsWith("video/")
-      ? `<video src="${file.data}" muted controls></video>`
-      : `<div class="preview-thumb">PDF</div>`;
-  return `<div class="preview-item">${thumb}<small>${file.name}</small></div>`;
-}
-
-function saveAndRerender(message) {
-  saveData();
-  renderPublic();
-  renderLoginPortal();
-  toast(message);
-}
-
+// ==================== PAINEL DO PROFESSOR ====================
 function renderTeacherPanel(session) {
   const root = $("[data-login-root]");
   const teacher = state.teachers.find((item) => item.id === session.id);
@@ -1157,7 +525,8 @@ function renderTeacherPanel(session) {
     return;
   }
   const teacherStudents = state.students.filter((student) => (teacher.classes || []).includes(student.className));
-  const teacherGrades = state.grades.filter((grade) => grade.teacherId === teacher.id || grade.subject === teacher.subject);
+  const teacherGrades = state.grades.filter((grade) => grade.subject === teacher.subject);
+
   root.innerHTML = `
     <div class="portal-heading">
       <div>
@@ -1170,15 +539,11 @@ function renderTeacherPanel(session) {
         <button class="button ghost" data-logout>Sair</button>
       </div>
     </div>
-    <article class="panel seduc-panel">
-      <h2>Conexao com SEDUC</h2>
-      <p class="muted">A integracao automatica com o iSEDUC depende de API oficial ou autorizacao da SEDUC. Por enquanto, este botao abre o portal para o professor registrar notas e presencas no iSEDUC.</p>
-    </article>
     <div class="panel">
       <div class="portal-heading compact">
         <div>
           <h2>Notas trimestrais</h2>
-          <p class="muted">Preencha N1, N2 e N3. A media do trimestre e calculada automaticamente. Marque se o aluno esta em recuperacao neste trimestre.</p>
+          <p class="muted">Preencha N1, N2 e N3. A media do trimestre e calculada automaticamente. Recuperacao e marcada automaticamente se media < 6.0</p>
         </div>
         <div class="segmented" role="tablist" aria-label="Trimestres">
           ${["1", "2", "3"].map((trimester) => `<button class="${currentTeacherTrimester === trimester ? "active" : ""}" data-teacher-trimester="${trimester}">${trimester}T</button>`).join("")}
@@ -1202,63 +567,78 @@ function renderTeacherPanel(session) {
       ${teacherReportTable(teacher, teacherGrades)}
     </div>
   `;
+
   $("[data-logout]").addEventListener("click", () => {
     clearSession();
     renderLoginPortal();
   });
+
   $$("[data-teacher-trimester]").forEach((button) =>
     button.addEventListener("click", () => {
       currentTeacherTrimester = button.dataset.teacherTrimester;
       renderTeacherPanel(session);
     })
   );
+
   $("[data-teacher-report]").addEventListener("click", () => {
     const panel = $("[data-teacher-report-panel]");
     panel.hidden = !panel.hidden;
     if (!panel.hidden) panel.scrollIntoView({ behavior: "smooth", block: "start" });
   });
+
   $("[data-pdf-report]").addEventListener("click", () => {
     generatePdfReport(`Relatorio - ${teacher.subject}`, teacherReportTable(teacher, teacherGrades));
   });
-  $("[data-teacher-grade-form]").addEventListener("submit", (event) => {
+
+  $("[data-teacher-grade-form]").addEventListener("submit", async (event) => {
     event.preventDefault();
-    teacherStudents.forEach((student) => {
-      const existing = findGrade(student.id, teacher.subject, student.className);
-      const next = existing || {
+    
+    for (const student of teacherStudents) {
+      const existing = state.grades.find(
+        (g) => g.studentId === student.id && g.subject === teacher.subject && g.className === student.className
+      );
+
+      const n1 = event.target.elements[`n1-${student.id}`]?.value || 0;
+      const n2 = event.target.elements[`n2-${student.id}`]?.value || 0;
+      const n3 = event.target.elements[`n3-${student.id}`]?.value || 0;
+      const recovery = calculateTrimesterRecovery(n1, n2, n3);
+
+      const gradeData = existing || {
         id: makeId(),
-        teacherId: teacher.id,
         studentId: student.id,
         subject: teacher.subject,
         className: student.className,
         trimesters: { 1: normalizeTrimester(), 2: normalizeTrimester(), 3: normalizeTrimester() }
       };
-      next.teacherId = teacher.id;
-      const recovery = event.target.elements[`recovery-${student.id}`]?.checked || false;
-      next.trimesters[currentTeacherTrimester] = normalizeTrimester({
-        n1: event.target.elements[`n1-${student.id}`]?.value,
-        n2: event.target.elements[`n2-${student.id}`]?.value,
-        n3: event.target.elements[`n3-${student.id}`]?.value,
-        recovery
-      });
+
+      gradeData.trimesters[currentTeacherTrimester] = { n1, n2, n3, recovery };
+
       if (existing) {
-        state.grades = state.grades.map((grade) => (grade.id === existing.id ? next : grade));
+        const idx = state.grades.indexOf(existing);
+        state.grades[idx] = gradeData;
       } else {
-        state.grades.push(next);
+        state.grades.push(gradeData);
       }
-    });
-    saveAndRerender("Notas salvas.");
+
+      await saveGradeToSupabase(gradeData);
+    }
+
+    toast("Notas salvas com sucesso.");
+    renderTeacherPanel(session);
   });
 }
 
-function findGrade(studentId, subject, className) {
-  return state.grades.find((grade) => grade.studentId === studentId && grade.subject === subject && grade.className === className);
-}
-
 function teacherStudentRow(student, teacher, trimester) {
-  const grade = findGrade(student.id, teacher.subject, student.className) || {};
+  const grade = state.grades.find(
+    (g) => g.studentId === student.id && g.subject === teacher.subject && g.className === student.className
+  ) || {
+    trimesters: { 1: normalizeTrimester(), 2: normalizeTrimester(), 3: normalizeTrimester() }
+  };
+
   const trimesterData = getTrimester(grade, trimester);
-  const average = trimesterAverage(grade, trimester);
-  const isRecovery = trimesterData.recovery || false;
+  const average = getTrimesterAverage(trimesterData.n1, trimesterData.n2, trimesterData.n3);
+  const isRecovery = trimesterData.recovery;
+
   return `
     <div class="gradebook-row">
       <div>
@@ -1269,8 +649,8 @@ function teacherStudentRow(student, teacher, trimester) {
       <input class="input" name="n2-${student.id}" type="number" min="0" max="10" step="0.1" value="${trimesterData.n2 || ""}">
       <input class="input" name="n3-${student.id}" type="number" min="0" max="10" step="0.1" value="${trimesterData.n3 || ""}">
       <strong>${average}</strong>
-      <input type="checkbox" name="recovery-${student.id}" ${isRecovery ? "checked" : ""}>
-      <span class="badge">${Number(average) >= 6 && !isRecovery ? "Aprovado" : isRecovery ? "Recuperacao" : "Recuperacao"}</span>
+      <span class="badge">${isRecovery ? "Recuperacao" : "Aprovado"}</span>
+      <span class="badge">${Number(average) >= 6 && !isRecovery ? "Aprovado" : isRecovery ? "Recuperacao" : "Pendente"}</span>
     </div>
   `;
 }
@@ -1295,6 +675,7 @@ function teacherReportTable(teacher, grades) {
       `;
     })
     .join("");
+
   return `
     <div class="table-scroll">
       <table class="report-table">
@@ -1307,6 +688,7 @@ function teacherReportTable(teacher, grades) {
   `;
 }
 
+// ==================== PAINEL DO ALUNO ====================
 function renderStudentPanel(session) {
   const root = $("[data-login-root]");
   const student = state.students.find((item) => item.id === session.id);
@@ -1315,14 +697,23 @@ function renderStudentPanel(session) {
     renderLoginForm();
     return;
   }
+
   const grades = state.grades.filter((grade) => grade.studentId === student.id);
+  const allGradesComplete = hasAllGrades(student.id);
   const averages = grades.map((grade) => Number(gradeAverage(grade)));
-  const generalAverage = averages.length
-    ? (averages.reduce((total, value) => total + value, 0) / averages.length).toFixed(1)
+  const generalAverage = averages.filter((a) => a > 0).length
+    ? (averages.filter((a) => a > 0).reduce((total, value) => total + value, 0) / averages.filter((a) => a > 0).length).toFixed(1)
     : "0.0";
-  const hasRecoveryTrimester = grades.some(grade => 
-    getTrimester(grade, "1").recovery || getTrimester(grade, "2").recovery || getTrimester(grade, "3").recovery
+
+  const hasRecoveryTrimester = grades.some(
+    (grade) =>
+      getTrimester(grade, "1").recovery ||
+      getTrimester(grade, "2").recovery ||
+      getTrimester(grade, "3").recovery
   );
+
+  const finalRecovery = allGradesComplete && Number(generalAverage) < 6;
+
   root.innerHTML = `
     <div class="portal-heading">
       <div>
@@ -1337,10 +728,18 @@ function renderStudentPanel(session) {
     <div class="dashboard-grid">
       ${miniStat("Media geral", generalAverage)}
       ${miniStat("Disciplinas", grades.length)}
-      ${miniStat("Situacao", hasRecoveryTrimester ? "Em recuperacao" : Number(generalAverage) >= 6 ? "Aprovado" : "Recuperacao")}
+      ${miniStat("Situacao", allGradesComplete ? (finalRecovery ? "Recuperacao final" : "Aprovado") : "Pendente")}
     </div>
-    <article class="panel recovery-panel ${hasRecoveryTrimester || Number(generalAverage) < 6 ? "warning" : ""}">
-      <strong>${hasRecoveryTrimester ? "Aluno em recuperacao em algum trimestre. Procure a escola para acompanhar o plano de estudos." : recoveryMessage(generalAverage)}</strong>
+    <article class="panel recovery-panel ${hasRecoveryTrimester || finalRecovery ? "warning" : ""}">
+      <strong>${
+        hasRecoveryTrimester && !finalRecovery
+          ? "Aluno em recuperacao em algum trimestre. Procure a escola para acompanhar o plano de estudos."
+          : finalRecovery
+          ? "Aluno em recuperacao final. Procure a escola para agendar avaliacao."
+          : allGradesComplete
+          ? "Aluno aprovado!"
+          : "Aguardando preenchimento de todas as notas..."
+      }</strong>
     </article>
     <div class="grade-grid">
       ${grades.map((grade) => studentGradeCard(grade)).join("") || emptyState("Nenhuma nota cadastrada para este aluno.")}
@@ -1350,34 +749,24 @@ function renderStudentPanel(session) {
         <h2>Relatorio geral do aluno</h2>
         <button class="button ghost" data-pdf-report>Gerar PDF</button>
       </div>
-      ${studentReportTable(grades)}
+      ${studentReportTable(grades, allGradesComplete, finalRecovery)}
     </div>
   `;
+
   $("[data-logout]").addEventListener("click", () => {
     clearSession();
     renderLoginPortal();
   });
+
   $("[data-student-report]").addEventListener("click", () => {
     const panel = $("[data-student-report-panel]");
     panel.hidden = !panel.hidden;
     if (!panel.hidden) panel.scrollIntoView({ behavior: "smooth", block: "start" });
   });
-  $("[data-pdf-report]").addEventListener("click", () => {
-    generatePdfReport(`Relatorio - ${student.name}`, studentReportTable(grades));
-  });
-}
 
-function gradeRow(grade) {
-  const student = state.students.find((item) => item.id === grade.studentId);
-  return `
-    <article class="admin-row">
-      <div>
-        <strong>${escapeHtml(student?.name || "Aluno")}</strong>
-        <p class="muted">${escapeHtml(grade.subject)} | ${escapeHtml(grade.className)} | media final ${gradeAverage(grade)}</p>
-      </div>
-      <span class="badge">1T ${trimesterAverage(grade, "1")} | 2T ${trimesterAverage(grade, "2")} | 3T ${trimesterAverage(grade, "3")}</span>
-    </article>
-  `;
+  $("[data-pdf-report]").addEventListener("click", () => {
+    generatePdfReport(`Relatorio - ${student.name}`, studentReportTable(grades, allGradesComplete, finalRecovery));
+  });
 }
 
 function studentGradeCard(grade) {
@@ -1385,6 +774,7 @@ function studentGradeCard(grade) {
   const t1Recovery = getTrimester(grade, "1").recovery;
   const t2Recovery = getTrimester(grade, "2").recovery;
   const t3Recovery = getTrimester(grade, "3").recovery;
+
   return `
     <article class="panel grade-card">
       <div class="grade-card-head">
@@ -1416,31 +806,40 @@ function trimesterMiniTable(grade, trimester) {
       <span>N1 ${Number(data.n1).toFixed(1)}</span>
       <span>N2 ${Number(data.n2).toFixed(1)}</span>
       <span>N3 ${Number(data.n3).toFixed(1)}</span>
-      <span>Media ${trimesterAverage(grade, trimester)}</span>
+      <span>Media ${getTrimesterAverage(data.n1, data.n2, data.n3)}</span>
     </div>
   `;
 }
 
-function studentReportTable(grades) {
+function studentReportTable(grades, allComplete, finalRecovery) {
   const rows = grades
-    .map(
-      (grade) => {
-        const t1Recovery = getTrimester(grade, "1").recovery;
-        const t2Recovery = getTrimester(grade, "2").recovery;
-        const t3Recovery = getTrimester(grade, "3").recovery;
-        return `
-          <tr>
-            <td>${escapeHtml(grade.subject)}</td>
-            <td>${trimesterAverage(grade, "1")} ${t1Recovery ? "(Rec)" : ""}</td>
-            <td>${trimesterAverage(grade, "2")} ${t2Recovery ? "(Rec)" : ""}</td>
-            <td>${trimesterAverage(grade, "3")} ${t3Recovery ? "(Rec)" : ""}</td>
-            <td>${gradeAverage(grade)}</td>
-            <td>${t1Recovery || t2Recovery || t3Recovery ? "Em recuperacao" : Number(gradeAverage(grade)) >= 6 ? "Aprovado" : "Recuperacao"}</td>
-          </tr>
-        `;
-      }
-    )
+    .map((grade) => {
+      const t1Recovery = getTrimester(grade, "1").recovery;
+      const t2Recovery = getTrimester(grade, "2").recovery;
+      const t3Recovery = getTrimester(grade, "3").recovery;
+      return `
+        <tr>
+          <td>${escapeHtml(grade.subject)}</td>
+          <td>${trimesterAverage(grade, "1")} ${t1Recovery ? "(Rec)" : ""}</td>
+          <td>${trimesterAverage(grade, "2")} ${t2Recovery ? "(Rec)" : ""}</td>
+          <td>${trimesterAverage(grade, "3")} ${t3Recovery ? "(Rec)" : ""}</td>
+          <td>${gradeAverage(grade)}</td>
+          <td>${
+            allComplete
+              ? t1Recovery || t2Recovery || t3Recovery
+                ? "Em recuperacao"
+                : Number(gradeAverage(grade)) >= 6
+                ? "Aprovado"
+                : finalRecovery
+                ? "Recuperacao final"
+                : "Pendente"
+              : "Pendente"
+          }</td>
+        </tr>
+      `;
+    })
     .join("");
+
   return `
     <div class="table-scroll">
       <table class="report-table">
@@ -1451,6 +850,22 @@ function studentReportTable(grades) {
       </table>
     </div>
   `;
+}
+
+function gradeBar(label, value, isRecovery = false) {
+  const percent = Math.max(0, Math.min(100, Number(value) * 10));
+  const recoveryText = isRecovery ? " - REC" : "";
+  return `
+    <div class="grade-bar">
+      <span>${label}${recoveryText}</span>
+      <div><i style="width:${percent}%"></i></div>
+      <strong>${Number(value).toFixed(1)}</strong>
+    </div>
+  `;
+}
+
+function miniStat(label, value) {
+  return `<div class="mini-stat"><strong>${value}</strong><span>${label}</span></div>`;
 }
 
 function generatePdfReport(title, content) {
@@ -1547,18 +962,64 @@ function generatePdfReport(title, content) {
   reportWindow.document.close();
 }
 
-function gradeBar(label, value, isRecovery = false) {
-  const percent = Math.max(0, Math.min(100, Number(value) * 10));
-  const recoveryText = isRecovery ? " - REC" : "";
-  return `
-    <div class="grade-bar">
-      <span>${label}${recoveryText}</span>
-      <div><i style="width:${percent}%"></i></div>
-      <strong>${Number(value).toFixed(1)}</strong>
+// ==================== ADMIN PAINEL ====================
+function renderAdmin() {
+  const root = $("[data-login-root]");
+  const session = getSession();
+  if (!session || session.role !== "admin") {
+    renderLoginForm();
+    return;
+  }
+
+  root.innerHTML = `
+    <div class="admin-layout">
+      <aside class="admin-tabs" aria-label="Menu administrativo">
+        ${["dashboard", "students", "teachers", "grades", "news"]
+          .map((tab) => `<button data-admin-tab="${tab}" class="${currentAdminTab === tab ? "active" : ""}">${tabLabel(tab)}</button>`)
+          .join("")}
+        <button data-logout>Sair</button>
+      </aside>
+      <section class="panel" data-admin-content></section>
     </div>
   `;
+
+  $$("[data-admin-tab]").forEach((button) =>
+    button.addEventListener("click", () => {
+      currentAdminTab = button.dataset.adminTab;
+      renderAdmin();
+    })
+  );
+
+  $("[data-logout]").addEventListener("click", () => {
+    clearSession();
+    renderLoginPortal();
+  });
+
+  renderAdminContent();
 }
 
+function tabLabel(tab) {
+  return { dashboard: "Dashboard", students: "Alunos", teachers: "Professores", grades: "Notas", news: "Noticias" }[tab];
+}
+
+function renderAdminContent() {
+  const content = $("[data-admin-content]");
+  if (currentAdminTab === "dashboard") {
+    content.innerHTML = `
+      <h2>Dashboard</h2>
+      <div class="dashboard-grid">
+        ${miniStat("Noticias", state.news.length)}
+        ${miniStat("Turmas", state.classes.length)}
+        ${miniStat("Alunos", state.students.length)}
+        ${miniStat("Professores", state.teachers.length)}
+        ${miniStat("Notas", state.grades.length)}
+        ${miniStat("Eventos", state.events.length)}
+      </div>
+    `;
+  }
+}
+
+// ==================== PREFERÊNCIAS E UI ====================
 function setupPreferences() {
   const theme = localStorage.getItem("theme") || "light";
   document.documentElement.dataset.theme = theme;
@@ -1574,25 +1035,24 @@ function setupUi() {
     $("[data-nav-panel]").classList.toggle("open");
     document.body.classList.toggle("no-scroll");
   });
+
   $$(".segmented button").forEach((button) =>
     button.addEventListener("click", () => {
       currentCalendarView = button.dataset.calendarView;
       renderCalendar();
     })
   );
-  $("[data-contact-form]").addEventListener("submit", (event) => {
-    event.preventDefault();
-    event.target.reset();
-    toast("Mensagem registrada localmente. Integre ao backend para envio real.");
-  });
+
   setInterval(() => {
     const media = $("[data-hero-media]");
     if (media) media.style.backgroundPosition = `${50 + Math.sin(Date.now() / 2500) * 3}% center`;
   }, 500);
 }
 
+// ==================== INICIALIZAÇÃO ====================
 window.addEventListener("hashchange", route);
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadDataFromSupabase();
   renderPublic();
   setupUi();
   setupPreferences();
